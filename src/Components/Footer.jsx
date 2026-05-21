@@ -20,15 +20,15 @@ const Footer = () => {
 
   return (
     <footer className="border-t border-slate-800 bg-slate-950 px-4 py-10 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-[1.2fr_1fr_1fr] md:items-start">
-        <div>
+      <div className="mx-auto grid w-full max-w-7xl gap-8 text-center sm:grid-cols-2 sm:text-left lg:grid-cols-[1.2fr_1fr_1fr] lg:items-start">
+        <div className="sm:col-span-2 lg:col-span-1">
           <Link href="/" className="inline-flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-600 text-white">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white sm:h-11 sm:w-11">
               <FaUserDoctor className="text-xl" aria-hidden="true" />
             </span>
-            <span className="text-2xl font-bold">MediCare</span>
+            <span className="text-xl font-bold sm:text-2xl">MediCare</span>
           </Link>
-          <p className="mt-4 max-w-sm text-sm leading-6 text-slate-300">
+          <p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-slate-300 sm:mx-0">
             Simple appointment management for patients, doctors, and clinic
             teams.
           </p>
@@ -38,7 +38,7 @@ const Footer = () => {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
             Quick Links
           </h2>
-          <div className="mt-4 flex flex-col gap-3 text-sm text-slate-300">
+          <div className="mt-4 flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm text-slate-300 sm:flex-col sm:justify-start">
             {quickLinks.map((link) => (
               <Link
                 key={link.href}
@@ -55,7 +55,7 @@ const Footer = () => {
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-200">
             Follow Us
           </h2>
-          <div className="mt-4 flex items-center gap-4 text-lg">
+          <div className="mt-4 flex items-center justify-center gap-4 text-lg sm:justify-start">
             {socialLinks.map(({ href, label, icon: Icon }) => (
               <a
                 key={label}
@@ -70,7 +70,7 @@ const Footer = () => {
         </div>
       </div>
 
-      <div className="mx-auto mt-8 max-w-7xl border-t border-slate-800 pt-6 text-center text-sm text-slate-400">
+      <div className="mx-auto mt-8 w-full max-w-7xl border-t border-slate-800 pt-6 text-center text-sm text-slate-400">
         &copy; 2026 MediCare. All rights reserved.
       </div>
     </footer>

@@ -1,13 +1,13 @@
 import Banner from "@/Components/Banner";
-import Image from "next/image";
+import HomeSections from "@/Components/HomeSections";
+import TopRatedDoctors from "@/Components/TopRatedDoctors";
 
 export default function Home() {
   return (
-    <div >
-
+    <div className="w-full">
       <Banner />
-
+      <TopRatedDoctors />
+      <HomeSections />
     </div>
   );
 }
-
