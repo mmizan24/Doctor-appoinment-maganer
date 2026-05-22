@@ -74,6 +74,7 @@ const RegisterPage = () => {
         provider: "github",
       }),
     );
+    window.dispatchEvent(new Event("auth-changed"));
     router.push("/");
   };
 

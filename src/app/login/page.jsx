@@ -24,6 +24,7 @@ const LoginPage = () => {
   const saveSession = (user) => {
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("user", JSON.stringify(user));
+    window.dispatchEvent(new Event("auth-changed"));
   };
 
   const handleSubmit = (event) => {
