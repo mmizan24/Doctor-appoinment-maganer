@@ -19,7 +19,7 @@ const Navbar = () => {
               <FaUserDoctor className="text-lg sm:text-xl" aria-hidden="true" />
             </span>
             <span className="truncate text-xl font-bold text-blue-600 sm:text-2xl">
-              MediCare
+              NavidMediCare
             </span>
           </Link>
 

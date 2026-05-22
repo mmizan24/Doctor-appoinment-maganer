@@ -26,7 +26,7 @@ const Footer = () => {
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white sm:h-11 sm:w-11">
               <FaUserDoctor className="text-xl" aria-hidden="true" />
             </span>
-            <span className="text-xl font-bold sm:text-2xl">MediCare</span>
+            <span className="text-xl font-bold sm:text-2xl">NavidMediCare</span>
           </Link>
           <p className="mx-auto mt-4 max-w-sm text-sm leading-6 text-slate-300 sm:mx-0">
             Simple appointment management for patients, doctors, and clinic
@@ -71,7 +71,7 @@ const Footer = () => {
       </div>
 
       <div className="mx-auto mt-8 w-full max-w-7xl border-t border-slate-800 pt-6 text-center text-sm text-slate-400">
-        &copy; 2026 MediCare. All rights reserved.
+        &copy; 2026 NavidMediCare. All rights reserved.
       </div>
     </footer>
   );

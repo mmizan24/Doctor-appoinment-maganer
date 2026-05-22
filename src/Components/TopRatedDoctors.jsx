@@ -69,7 +69,8 @@ const TopRatedDoctors = () => {
                   {doctor.location}
                 </p>
                 <p>
-                  Fee: <span className="font-semibold">{doctor.fee}</span>
+                  Fee:{" "}
+                  <span className="font-semibold">BDT {doctor.fee}</span>
                 </p>
               </div>
 
