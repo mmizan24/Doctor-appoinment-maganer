@@ -4,7 +4,12 @@ NavidMediCare is a doctor appointment manager for browsing doctors, booking visi
 
 ## Live Site
 
-Client-side live URL: []
+Client-side live URL: https://your-client-live-site-url.com
+
+## Repositories
+
+- Client GitHub Repository: https://github.com/mmizan24/Doctor-appoinment-maganer
+- Server GitHub Repository: https://github.com/mmizan24/doctor-server
 
 ## Features
 
@@ -23,6 +28,18 @@ Client-side live URL: []
 - Tailwind CSS
 - MongoDB
 - Better Auth
+
+## Environment Variables
+
+Create a `.env` file and set:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:5000
+BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=your-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+```
 
 ## Local Development
 
