@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa6";
 import BookAppointmentModal from "@/Components/BookAppointmentModal";
 import { doctors } from "@/data/doctors";
-import clientPromise from "@/lib/mongodb";
+import { apiUrl } from "@/lib/api";
 
 const DoctorDetailsPage = async ({ params }) => {
   const { id } = await params;
@@ -19,22 +19,18 @@ const DoctorDetailsPage = async ({ params }) => {
     notFound();
   }
 
-  // 1. Fetch live reviews from MongoDB
   let reviews = [];
   try {
-    if (clientPromise) {
-      const client = await clientPromise;
-      const db = client.db(process.env.MONGODB_DB || "doctor_manager");
-      const fetchedReviews = await db
-        .collection("reviews")
-        .find({ doctorId: id })
-        .sort({ createdAt: -1 })
-        .toArray();
-      
-      reviews = fetchedReviews.map((r) => ({
-        ...r,
-        _id: r._id.toString(),
-        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString("en-US", {
+    const response = await fetch(apiUrl(`/reviews?doctorId=${id}`), {
+      cache: "no-store",
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+
+      reviews = (data.reviews || []).map((review) => ({
+        ...review,
+        createdAt: review.createdAt ? new Date(review.createdAt).toLocaleDateString("en-US", {
           year: "numeric",
           month: "short",
           day: "numeric",
