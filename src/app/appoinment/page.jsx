@@ -86,7 +86,7 @@ const AppointmentPage = () => {
             <h1 className="mt-3 text-3xl font-bold text-slate-950 dark:text-slate-100 sm:text-4xl">
               Choose your next doctor visit
             </h1>
-            <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-400">
+            <p className="mt-4 text-base leading-7 text-white-600 dark:text-slate-100">
               Browse all available appointments and open a doctor profile before
               confirming your schedule.
             </p>
@@ -109,7 +109,7 @@ const AppointmentPage = () => {
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               placeholder="Search by doctor name"
-              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-950 dark:text-slate-100 py-3 pl-10 pr-3 text-sm outline-none transition focus:border-blue-600"
+              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-black dark:bg-slate-800 text-black-950 dark:text-slate-100 py-3 pl-10 pr-3 text-sm outline-none transition focus:border-blue-600"
             />
           </label>
 

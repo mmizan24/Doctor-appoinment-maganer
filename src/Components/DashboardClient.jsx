@@ -470,7 +470,7 @@ const DashboardClient = () => {
                           <p className="text-sm font-semibold text-blue-600 dark:text-blue-500">
                             {booking.specialty || "Medical Appointment"}
                           </p>
-                          <h2 className="mt-2 text-xl font-bold text-slate-950 dark:text-slate-100">
+                          <h2 className="mt-2 text-xl font-bold text-slate-950 dark:text-blue-100">
                             {booking.doctorName}
                           </h2>
                           <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
