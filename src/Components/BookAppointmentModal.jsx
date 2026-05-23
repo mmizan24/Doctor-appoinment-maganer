@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { FaCalendarCheck, FaXmark } from "react-icons/fa6";
 import { authClient } from "@/lib/auth-client";
+import { apiUrl } from "@/lib/api";
 
 const BookAppointmentModal = ({ doctor }) => {
   const { data: session } = authClient.useSession();
@@ -45,7 +46,7 @@ const BookAppointmentModal = ({ doctor }) => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/api/appointments", {
+      const response = await fetch(apiUrl("/appointments"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
