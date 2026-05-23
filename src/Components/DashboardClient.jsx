@@ -14,6 +14,7 @@ import {
 } from "react-icons/fa6";
 import { doctors } from "@/data/doctors";
 import { authClient } from "@/lib/auth-client";
+import { apiUrl } from "@/lib/api";
 
 const bookingFields = [
   "patientName",
@@ -164,7 +165,7 @@ const DashboardClient = () => {
 
       try {
         const response = await fetch(
-          `/api/appointments?userEmail=${encodeURIComponent(user.email)}`,
+          apiUrl(`/appointments?userEmail=${encodeURIComponent(user.email)}`),
         );
         const result = await response.json();
 
@@ -218,7 +219,7 @@ const DashboardClient = () => {
     setError("");
 
     try {
-      const response = await fetch(`/api/appointments?id=${editingBooking._id}`, {
+      const response = await fetch(apiUrl(`/appointments/${editingBooking._id}`), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -255,9 +256,9 @@ const DashboardClient = () => {
 
     try {
       const response = await fetch(
-        `/api/appointments?id=${bookingId}&userEmail=${encodeURIComponent(
+        apiUrl(`/appointments/${bookingId}?userEmail=${encodeURIComponent(
           user.email,
-        )}`,
+        )}`),
         { method: "DELETE" },
       );
       const result = await response.json();
@@ -320,7 +321,7 @@ const DashboardClient = () => {
     const doctorId = reviewingBooking.doctorId || matchedDoctor?.id || "d1";
 
     try {
-      const response = await fetch("/api/reviews", {
+      const response = await fetch(apiUrl("/reviews"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
