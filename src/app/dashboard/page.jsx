@@ -1,11 +1,13 @@
-import React from 'react';
+import DashboardClient from "@/Components/DashboardClient";
 
-const dashBoardPage = () => {
-    return (
-        <div>
-            dash board page
-        </div>
-    );
+export const metadata = {
+  title: "Dashboard | NavidMediCare",
+  description:
+    "Manage your NavidMediCare appointments, booking updates, cancellations, and patient profile information.",
 };
 
-export default dashBoardPage;
+const DashboardPage = () => {
+  return <DashboardClient />;
+};
+
+export default DashboardPage;

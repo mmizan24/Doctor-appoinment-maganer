@@ -33,7 +33,7 @@ const Banner = () => {
   ];
 
   return (
-    <section className="bg-slate-50 px-4 py-8 sm:px-6 lg:px-8">
+    <section className="bg-white dark:bg-slate-950/20 px-4 py-8 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="mx-auto w-full max-w-7xl">
         <Swiper
           modules={[Autoplay, Navigation, Pagination]}

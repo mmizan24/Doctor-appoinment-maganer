@@ -27,7 +27,7 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`sticky top-[136px] z-40 h-[calc(100vh-136px)] shrink-0 border-r border-slate-200 bg-white shadow-sm transition-all duration-300 sm:top-[120px] sm:h-[calc(100vh-120px)] lg:top-[81px] lg:h-[calc(100vh-81px)] ${
+      className={`sticky top-[136px] z-40 h-[calc(100vh-136px)] shrink-0 border-r border-slate-200 bg-white shadow-sm transition-all duration-300 sm:top-[120px] sm:h-[calc(100vh-120px)] lg:top-[81px] lg:h-[calc(100vh-81px)] dark:border-slate-800 dark:bg-slate-900 ${
         isOpen ? "w-64" : "w-20"
       }`}
     >
@@ -36,7 +36,7 @@ const Sidebar = () => {
           type="button"
           onClick={() => setIsOpen((current) => !current)}
           aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
-          className="mb-5 flex h-10 w-10 items-center justify-center self-end rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+          className="mb-5 flex h-10 w-10 items-center justify-center self-end rounded-md border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 hover:text-blue-600"
         >
           {isOpen ? (
             <FaChevronLeft aria-hidden="true" />
@@ -57,7 +57,7 @@ const Sidebar = () => {
                 className={`flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition ${
                   isActive
                     ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                    : "text-slate-700 hover:bg-blue-50 dark:text-slate-300 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-blue-400"
                 } ${isOpen ? "justify-start" : "justify-center"}`}
               >
                 <Icon className="shrink-0 text-base" aria-hidden="true" />
@@ -74,14 +74,14 @@ const Sidebar = () => {
         </nav>
 
         <div
-          className={`rounded-md bg-slate-50 p-3 transition-opacity duration-300 ${
+          className={`rounded-md bg-slate-50 p-3 transition-opacity duration-300 dark:bg-slate-800/40 ${
             isOpen ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         >
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             Clinic Status
           </p>
-          <p className="mt-2 text-sm font-semibold text-slate-950">
+          <p className="mt-2 text-sm font-semibold text-slate-950 dark:text-slate-200">
             8 patients waiting
           </p>
         </div>
