@@ -306,6 +306,7 @@ const DashboardClient = () => {
   };
 
   const openReviewModal = (booking) => {
+    setError("");
     setReviewingBooking(booking);
     setReviewForm({ rating: 5, comment: "" });
   };
@@ -314,10 +315,21 @@ const DashboardClient = () => {
     event.preventDefault();
     if (!reviewingBooking || !user) return;
 
+    const comment = reviewForm.comment.trim();
+
+    if (!comment) {
+      setError("Please write a review before submitting.");
+      return;
+    }
+
     setIsSavingReview(true);
     setError("");
 
-    const matchedDoctor = doctors.find((d) => d.name === reviewingBooking.doctorName);
+    const matchedDoctor = doctors.find(
+      (doctor) =>
+        doctor.name.toLowerCase() ===
+        (reviewingBooking.doctorName || "").trim().toLowerCase(),
+    );
     const doctorId = reviewingBooking.doctorId || matchedDoctor?.id || "d1";
 
     try {
@@ -325,13 +337,14 @@ const DashboardClient = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          appointmentId: reviewingBooking._id,
           userEmail: user.email,
           userName: user.name || "Anonymous Patient",
           userPhoto: user.photoURL || "",
           doctorId,
           doctorName: reviewingBooking.doctorName,
           rating: reviewForm.rating,
-          comment: reviewForm.comment,
+          comment,
         }),
       });
 
@@ -341,7 +354,15 @@ const DashboardClient = () => {
         throw new Error(result.message || "Failed to submit review.");
       }
 
+      setBookings((current) =>
+        current.map((booking) =>
+          booking._id === reviewingBooking._id
+            ? { ...booking, reviewId: result.review?._id, reviewed: true }
+            : booking,
+        ),
+      );
       setReviewingBooking(null);
+      setReviewForm({ rating: 5, comment: "" });
       showToast("Review submitted successfully!");
     } catch (err) {
       setError(err.message);
@@ -785,7 +806,10 @@ const DashboardClient = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setReviewingBooking(null)}
+                onClick={() => {
+                  setReviewingBooking(null);
+                  setError("");
+                }}
                 aria-label="Close review modal"
                 className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700"
               >

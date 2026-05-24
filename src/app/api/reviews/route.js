@@ -38,15 +38,17 @@ export async function POST(request) {
     }
 
     const rating = Math.min(5, Math.max(1, Number(body.rating) || 1));
+    const comment = String(body.comment).trim();
     const now = new Date();
     const review = {
+      appointmentId: body.appointmentId || "",
       userEmail: body.userEmail,
-      userName: body.userName || "Anonymous Patient",
+      userName: body.userName || body.userEmail.split("@")[0] || "Anonymous Patient",
       userPhoto: body.userPhoto || "",
       doctorId: body.doctorId,
       doctorName: body.doctorName,
       rating,
-      comment: body.comment,
+      comment,
       createdAt: now,
       updatedAt: now,
     };
