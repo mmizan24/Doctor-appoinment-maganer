@@ -35,10 +35,27 @@ Create a `.env` file and set:
 
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:5000
+MONGODB_URI=your-mongodb-uri
+MONGODB_DB=doctor_manager
 BETTER_AUTH_URL=http://localhost:3000
 BETTER_AUTH_SECRET=your-secret
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
+```
+
+## GitHub OAuth Callback URL
+
+In the GitHub OAuth app settings, set the Authorization callback URL to match
+the domain in `BETTER_AUTH_URL`:
+
+```bash
+http://localhost:3000/api/auth/callback/github
+```
+
+For the deployed Vercel site, use:
+
+```bash
+https://doctor-appointment-manager-sable.vercel.app/api/auth/callback/github
 ```
 
 ## Local Development

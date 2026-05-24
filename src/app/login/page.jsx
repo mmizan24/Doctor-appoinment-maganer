@@ -11,6 +11,7 @@ const LoginPage = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -38,28 +39,26 @@ const LoginPage = () => {
     setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  const saveSession = (user) => {
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("user", JSON.stringify(user));
-    window.dispatchEvent(new Event("auth-changed"));
-  };
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
-    const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-    const user = users.find(
-      (item) =>
-        item.email === formData.email && item.password === formData.password,
-    );
+    setIsSubmitting(true);
 
-    if (!user) {
-      setError("Invalid email or password.");
+    const { error: signinError } = await authClient.signIn.email({
+      email: formData.email,
+      password: formData.password,
+      callbackURL: getRedirectPath(),
+      rememberMe: true,
+    });
+
+    setIsSubmitting(false);
+
+    if (signinError) {
+      setError(signinError.message || "Invalid email or password.");
       return;
     }
 
-    saveSession(user);
     setToast("Login successful!");
     router.push(getRedirectPath());
   };
@@ -142,9 +141,10 @@ const LoginPage = () => {
 
           <button
             type="submit"
-            className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
+            disabled={isSubmitting}
+            className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 cursor-pointer"
           >
-            Login
+            {isSubmitting ? "Signing in..." : "Login"}
           </button>
         </form>
 

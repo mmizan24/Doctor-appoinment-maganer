@@ -1,9 +1,9 @@
 import { getDb } from "@/lib/mongodb";
+import { auth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 const requiredBookingFields = [
-  "userEmail",
   "patientName",
   "gender",
   "phone",
@@ -18,18 +18,26 @@ const serializeAppointment = (appointment) => ({
   _id: appointment._id.toString(),
 });
 
+const getAuthUser = async (request) => {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  return session?.user || null;
+};
+
 export async function GET(request) {
   try {
-    const userEmail = request.nextUrl.searchParams.get("userEmail");
+    const user = await getAuthUser(request);
 
-    if (!userEmail) {
-      return Response.json({ message: "User email is required." }, { status: 400 });
+    if (!user?.email) {
+      return Response.json({ message: "Authentication is required." }, { status: 401 });
     }
 
     const db = await getDb();
     const appointments = await db
       .collection("appointments")
-      .find({ userEmail })
+      .find({ userEmail: user.email })
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -44,6 +52,12 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const user = await getAuthUser(request);
+
+    if (!user?.email) {
+      return Response.json({ message: "Authentication is required." }, { status: 401 });
+    }
+
     const body = await request.json();
     const missingField = requiredBookingFields.find((field) => !body[field]);
 
@@ -56,7 +70,7 @@ export async function POST(request) {
 
     const now = new Date();
     const appointment = {
-      userEmail: body.userEmail,
+      userEmail: user.email,
       patientName: body.patientName,
       gender: body.gender,
       phone: body.phone,

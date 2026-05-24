@@ -2,16 +2,26 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { FaUser, FaUserDoctor, FaSun, FaMoon } from "react-icons/fa6";
 import { useTheme } from "@/Components/ThemeProvider";
 import { authClient } from "@/lib/auth-client";
 
 const Navbar = () => {
   const router = useRouter();
-  const [user, setUser] = useState(null);
   const { toggleTheme } = useTheme();
   const { data: session } = authClient.useSession();
+  const user = useMemo(() => {
+    if (!session?.user) {
+      return null;
+    }
+
+    return {
+      name: session.user.name || "",
+      email: session.user.email || "",
+      photoURL: session.user.image || "",
+    };
+  }, [session]);
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -19,52 +29,8 @@ const Navbar = () => {
     { href: "/dashboard", label: "Dashboard" },
   ];
 
-  useEffect(() => {
-    if (session?.user) {
-      const timeoutId = window.setTimeout(() => {
-        const authUser = {
-          name: session.user.name || "",
-          email: session.user.email || "",
-          photoURL: session.user.image || "",
-          provider: "github",
-        };
-
-        setUser(authUser);
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("user", JSON.stringify(authUser));
-      }, 0);
-
-      return () => window.clearTimeout(timeoutId);
-    }
-
-    const loadUser = () => {
-      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-      const savedUser = localStorage.getItem("user");
-
-      if (!isLoggedIn || !savedUser) {
-        setUser(null);
-        return;
-      }
-
-      setUser(JSON.parse(savedUser));
-    };
-
-    loadUser();
-    window.addEventListener("storage", loadUser);
-    window.addEventListener("auth-changed", loadUser);
-
-    return () => {
-      window.removeEventListener("storage", loadUser);
-      window.removeEventListener("auth-changed", loadUser);
-    };
-  }, [session]);
-
   const handleLogout = async () => {
     await authClient.signOut();
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("user");
-    setUser(null);
-    window.dispatchEvent(new Event("auth-changed"));
     router.push("/login");
   };
 

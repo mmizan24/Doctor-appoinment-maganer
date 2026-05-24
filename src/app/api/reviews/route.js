@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/mongodb";
+import { auth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -6,6 +7,14 @@ const serializeReview = (review) => ({
   ...review,
   _id: review._id.toString(),
 });
+
+const getAuthUser = async (request) => {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  return session?.user || null;
+};
 
 export async function GET(request) {
   try {
@@ -28,9 +37,15 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const user = await getAuthUser(request);
+
+    if (!user?.email) {
+      return Response.json({ message: "Authentication is required." }, { status: 401 });
+    }
+
     const body = await request.json();
 
-    if (!body.userEmail || !body.doctorId || !body.doctorName || !body.comment) {
+    if (!body.doctorId || !body.doctorName || !body.comment) {
       return Response.json(
         { message: "User, doctor, rating, and comment are required." },
         { status: 400 },
@@ -42,9 +57,9 @@ export async function POST(request) {
     const now = new Date();
     const review = {
       appointmentId: body.appointmentId || "",
-      userEmail: body.userEmail,
-      userName: body.userName || body.userEmail.split("@")[0] || "Anonymous Patient",
-      userPhoto: body.userPhoto || "",
+      userEmail: user.email,
+      userName: user.name || user.email.split("@")[0] || "Anonymous Patient",
+      userPhoto: user.image || "",
       doctorId: body.doctorId,
       doctorName: body.doctorName,
       rating,

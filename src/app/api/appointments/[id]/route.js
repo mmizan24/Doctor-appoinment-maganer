@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/mongodb";
+import { auth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
@@ -18,8 +19,22 @@ const getAppointmentId = async (params) => {
   return new ObjectId(id);
 };
 
+const getAuthUser = async (request) => {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  return session?.user || null;
+};
+
 export async function PATCH(request, { params }) {
   try {
+    const user = await getAuthUser(request);
+
+    if (!user?.email) {
+      return Response.json({ message: "Authentication is required." }, { status: 401 });
+    }
+
     const appointmentId = await getAppointmentId(params);
 
     if (!appointmentId) {
@@ -27,10 +42,6 @@ export async function PATCH(request, { params }) {
     }
 
     const body = await request.json();
-
-    if (!body.userEmail) {
-      return Response.json({ message: "User email is required." }, { status: 400 });
-    }
 
     const update = {
       patientName: body.patientName,
@@ -43,7 +54,7 @@ export async function PATCH(request, { params }) {
 
     const db = await getDb();
     const result = await db.collection("appointments").findOneAndUpdate(
-      { _id: appointmentId, userEmail: body.userEmail },
+      { _id: appointmentId, userEmail: user.email },
       { $set: update },
       { returnDocument: "after" },
     );
@@ -64,22 +75,21 @@ export async function PATCH(request, { params }) {
 
 export async function DELETE(request, { params }) {
   try {
+    const user = await getAuthUser(request);
+
+    if (!user?.email) {
+      return Response.json({ message: "Authentication is required." }, { status: 401 });
+    }
+
     const appointmentId = await getAppointmentId(params);
 
     if (!appointmentId) {
       return Response.json({ message: "Invalid appointment id." }, { status: 400 });
     }
-
-    const userEmail = request.nextUrl.searchParams.get("userEmail");
-
-    if (!userEmail) {
-      return Response.json({ message: "User email is required." }, { status: 400 });
-    }
-
     const db = await getDb();
     const result = await db
       .collection("appointments")
-      .deleteOne({ _id: appointmentId, userEmail });
+      .deleteOne({ _id: appointmentId, userEmail: user.email });
 
     if (!result.deletedCount) {
       return Response.json({ message: "Appointment not found." }, { status: 404 });

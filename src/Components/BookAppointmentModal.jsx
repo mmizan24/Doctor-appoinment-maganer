@@ -23,9 +23,7 @@ const BookAppointmentModal = ({ doctor }) => {
   });
 
   const openBookingModal = () => {
-    const savedUser = localStorage.getItem("user");
-    const user = savedUser ? JSON.parse(savedUser) : null;
-    const email = session?.user?.email || user?.email || "";
+    const email = session?.user?.email || "";
 
     setFormData((current) => ({
       ...current,
@@ -46,11 +44,14 @@ const BookAppointmentModal = ({ doctor }) => {
     setIsSubmitting(true);
 
     try {
+      const bookingData = { ...formData };
+      delete bookingData.userEmail;
+
       const response = await fetch(apiUrl("/appointments"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          ...bookingData,
           doctorId: doctor.id,
           doctorName: doctor.name,
           specialty: doctor.specialty,
@@ -134,10 +135,10 @@ const BookAppointmentModal = ({ doctor }) => {
                     type="email"
                     name="userEmail"
                     value={formData.userEmail}
-                    onChange={handleChange}
+                    readOnly
                     required
                     placeholder="user@gmail.com"
-                    className="mt-2 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-950 dark:text-slate-100 px-3 py-3 text-sm outline-none transition focus:border-blue-600"
+                    className="mt-2 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-3 py-3 text-sm outline-none"
                   />
                 </div>
 

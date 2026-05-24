@@ -24,24 +24,13 @@ const bookingFields = [
   "appointmentTime",
 ];
 
-const getStoredUser = () => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  const savedUser = localStorage.getItem("user");
-  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-
-  if (!isLoggedIn || !savedUser) {
-    return null;
-  }
-
-  return JSON.parse(savedUser);
-};
-
 const DashboardClient = () => {
   const router = useRouter();
-  const { data: session, isPending: isSessionPending } = authClient.useSession();
+  const {
+    data: session,
+    isPending: isSessionPending,
+    refetch: refetchSession,
+  } = authClient.useSession();
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState("bookings");
@@ -72,6 +61,7 @@ const DashboardClient = () => {
     name: "",
     photoURL: "",
   });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const showToast = (message) => {
     setToast(message);
@@ -107,31 +97,21 @@ const DashboardClient = () => {
   }, [bookings, sortBy]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      const storedUser = getStoredUser();
-
-      setUser(storedUser);
-      setProfileForm({
-        name: storedUser?.name || "",
-        photoURL: storedUser?.photoURL || "",
-      });
-      setAuthChecked(true);
-    }, 0);
-
-    return () => window.clearTimeout(timeoutId);
-  }, []);
-
-  useEffect(() => {
-    if (!session?.user) {
+    if (isSessionPending) {
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
+      if (!session?.user) {
+        setUser(null);
+        setAuthChecked(true);
+        return;
+      }
+
       const authUser = {
         name: session.user.name || "",
         email: session.user.email || "",
         photoURL: session.user.image || "",
-        provider: "github",
       };
 
       setUser(authUser);
@@ -140,13 +120,10 @@ const DashboardClient = () => {
         photoURL: authUser.photoURL,
       });
       setAuthChecked(true);
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("user", JSON.stringify(authUser));
-      window.dispatchEvent(new Event("auth-changed"));
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, [session]);
+  }, [isSessionPending, session]);
 
   useEffect(() => {
     if (authChecked && !isSessionPending && !user) {
@@ -164,9 +141,7 @@ const DashboardClient = () => {
       setError("");
 
       try {
-        const response = await fetch(
-          apiUrl(`/appointments?userEmail=${encodeURIComponent(user.email)}`),
-        );
+        const response = await fetch(apiUrl("/appointments"));
         const result = await response.json();
 
         if (!response.ok) {
@@ -223,7 +198,6 @@ const DashboardClient = () => {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userEmail: user.email,
           ...bookingForm,
         }),
       });
@@ -255,12 +229,9 @@ const DashboardClient = () => {
     setError("");
 
     try {
-      const response = await fetch(
-        apiUrl(`/appointments/${bookingId}?userEmail=${encodeURIComponent(
-          user.email,
-        )}`),
-        { method: "DELETE" },
-      );
+      const response = await fetch(apiUrl(`/appointments/${bookingId}`), {
+        method: "DELETE",
+      });
       const result = await response.json();
 
       if (!response.ok) {
@@ -281,26 +252,30 @@ const DashboardClient = () => {
     setProfileForm((current) => ({ ...current, [name]: value }));
   };
 
-  const handleProfileUpdate = (event) => {
+  const handleProfileUpdate = async (event) => {
     event.preventDefault();
 
-    const updatedUser = {
-      ...user,
+    setIsSavingProfile(true);
+    setError("");
+
+    const { error: updateError } = await authClient.updateUser({
+      name: profileForm.name,
+      image: profileForm.photoURL || null,
+    });
+
+    setIsSavingProfile(false);
+
+    if (updateError) {
+      setError(updateError.message || "Failed to update profile.");
+      return;
+    }
+
+    await refetchSession?.();
+    setUser((current) => ({
+      ...current,
       name: profileForm.name,
       photoURL: profileForm.photoURL,
-    };
-    const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-    const updatedUsers = users.map((storedUser) =>
-      storedUser.email === updatedUser.email
-        ? { ...storedUser, ...updatedUser }
-        : storedUser,
-    );
-
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-    localStorage.setItem("registeredUsers", JSON.stringify(updatedUsers));
-    localStorage.setItem("isLoggedIn", "true");
-    window.dispatchEvent(new Event("auth-changed"));
-    setUser(updatedUser);
+    }));
     setIsProfileOpen(false);
     showToast("Profile updated successfully!");
   };
@@ -338,9 +313,6 @@ const DashboardClient = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           appointmentId: reviewingBooking._id,
-          userEmail: user.email,
-          userName: user.name || "Anonymous Patient",
-          userPhoto: user.photoURL || "",
           doctorId,
           doctorName: reviewingBooking.doctorName,
           rating: reviewForm.rating,
@@ -780,9 +752,10 @@ const DashboardClient = () => {
 
               <button
                 type="submit"
-                className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                disabled={isSavingProfile}
+                className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
               >
-                Save Profile
+                {isSavingProfile ? "Saving..." : "Save Profile"}
               </button>
             </form>
           </div>

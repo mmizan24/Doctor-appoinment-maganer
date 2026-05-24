@@ -15,6 +15,7 @@ const RegisterPage = () => {
     password: "",
   });
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -29,8 +30,8 @@ const RegisterPage = () => {
   }, []);
 
   const validatePassword = (password) => {
-    if (password.length < 6) {
-      return "Password must be at least 6 characters long.";
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long.";
     }
 
     if (!/[A-Z]/.test(password)) {
@@ -49,7 +50,7 @@ const RegisterPage = () => {
     setFormData((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
 
@@ -60,20 +61,24 @@ const RegisterPage = () => {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("registeredUsers") || "[]");
-    const alreadyExists = users.some((user) => user.email === formData.email);
+    setIsSubmitting(true);
 
-    if (alreadyExists) {
-      setError("An account with this email already exists.");
+    const { error: signupError } = await authClient.signUp.email({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      image: formData.photoURL,
+      callbackURL: "/dashboard",
+    });
+
+    setIsSubmitting(false);
+
+    if (signupError) {
+      setError(signupError.message || "Registration failed.");
       return;
     }
 
-    localStorage.setItem(
-      "registeredUsers",
-      JSON.stringify([...users, formData]),
-    );
-
-    router.push("/login");
+    router.push("/dashboard");
   };
 
   const handleGithubSignup = async () => {
@@ -170,9 +175,10 @@ const RegisterPage = () => {
 
           <button
             type="submit"
-            className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
+            disabled={isSubmitting}
+            className="w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 cursor-pointer"
           >
-            Register
+            {isSubmitting ? "Creating account..." : "Register"}
           </button>
         </form>
 

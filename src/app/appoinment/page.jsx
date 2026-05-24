@@ -11,6 +11,7 @@ import {
   FaUserDoctor,
 } from "react-icons/fa6";
 import { doctors } from "@/data/doctors";
+import { authClient } from "@/lib/auth-client";
 
 const getExperienceYears = (exp) => {
   const matched = exp.match(/\d+/);
@@ -19,6 +20,7 @@ const getExperienceYears = (exp) => {
 
 const AppointmentPage = () => {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
   const [searchText, setSearchText] = useState("");
   const [sortBy, setSortBy] = useState("default");
 
@@ -61,11 +63,7 @@ const AppointmentPage = () => {
   }, [searchText, sortBy]);
 
   const handleViewDetails = (doctorId) => {
-    const isLoggedIn =
-      localStorage.getItem("isLoggedIn") === "true" ||
-      Boolean(localStorage.getItem("user"));
-
-    if (isLoggedIn) {
+    if (session?.user) {
       router.push(`/doctors/${doctorId}`);
       return;
     }

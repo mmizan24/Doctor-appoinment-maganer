@@ -21,4 +21,19 @@ Set `CORS_ORIGIN` to the deployed client URL.
 CORS_ORIGIN=https://your-client-live-site-url.com
 ```
 
-Keep GitHub OAuth callback URLs aligned with the deployed client domain when moving from local development to production.
+## GitHub OAuth
+
+Keep GitHub OAuth callback URLs aligned with the client domain in
+`BETTER_AUTH_URL`.
+
+Local development callback:
+
+```bash
+http://localhost:3000/api/auth/callback/github
+```
+
+Production callback:
+
+```bash
+https://doctor-appointment-manager-sable.vercel.app/api/auth/callback/github
+```

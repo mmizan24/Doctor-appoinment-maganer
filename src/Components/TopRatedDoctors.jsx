@@ -3,19 +3,17 @@
 import { useRouter } from "next/navigation";
 import { FaLocationDot, FaStar, FaUserDoctor } from "react-icons/fa6";
 import { doctors } from "@/data/doctors";
+import { authClient } from "@/lib/auth-client";
 
 const TopRatedDoctors = () => {
   const router = useRouter();
+  const { data: session } = authClient.useSession();
   const topDoctors = [...doctors]
     .sort((first, second) => second.rating - first.rating)
     .slice(0, 3);
 
   const handleViewDetails = (doctorId) => {
-    const isLoggedIn =
-      localStorage.getItem("isLoggedIn") === "true" ||
-      Boolean(localStorage.getItem("user"));
-
-    if (isLoggedIn) {
+    if (session?.user) {
       router.push(`/doctors/${doctorId}`);
       return;
     }
