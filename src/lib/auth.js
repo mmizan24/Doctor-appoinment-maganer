@@ -21,13 +21,18 @@ if (process.env.NODE_ENV === "development") {
 }
 
 const db = betterAuthClient.db(process.env.MONGODB_DB || "doctor_manager");
+const productionUrl = "https://doctor-appointment-manager-sable.vercel.app";
+const authBaseUrl =
+  process.env.BETTER_AUTH_URL ||
+  (process.env.VERCEL ? productionUrl : "http://localhost:3000");
 
 export const auth = betterAuth({
   database: mongodbAdapter(db, {
     client: betterAuthClient,
   }),
   secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  baseURL: authBaseUrl,
+  trustedOrigins: [productionUrl, "http://localhost:3000"],
   socialProviders: {
     github: {
       clientId: process.env.GITHUB_CLIENT_ID || "",
