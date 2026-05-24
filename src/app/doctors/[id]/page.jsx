@@ -9,7 +9,9 @@ import {
 } from "react-icons/fa6";
 import BookAppointmentModal from "@/Components/BookAppointmentModal";
 import { doctors } from "@/data/doctors";
-import { apiUrl } from "@/lib/api";
+import { getDb } from "@/lib/mongodb";
+
+export const dynamic = "force-dynamic";
 
 const DoctorDetailsPage = async ({ params }) => {
   const { id } = await params;
@@ -21,22 +23,24 @@ const DoctorDetailsPage = async ({ params }) => {
 
   let reviews = [];
   try {
-    const response = await fetch(apiUrl(`/reviews?doctorId=${id}`), {
-      cache: "no-store",
-    });
+    const db = await getDb();
+    const reviewDocs = await db
+      .collection("reviews")
+      .find({ doctorId: id })
+      .sort({ createdAt: -1 })
+      .toArray();
 
-    if (response.ok) {
-      const data = await response.json();
-
-      reviews = (data.reviews || []).map((review) => ({
-        ...review,
-        createdAt: review.createdAt ? new Date(review.createdAt).toLocaleDateString("en-US", {
+    reviews = reviewDocs.map((review) => ({
+      ...review,
+      _id: review._id.toString(),
+      createdAt: review.createdAt
+        ? new Date(review.createdAt).toLocaleDateString("en-US", {
           year: "numeric",
           month: "short",
           day: "numeric",
-        }) : "Recently",
-      }));
-    }
+        })
+        : "Recently",
+    }));
   } catch (error) {
     console.error("Failed to fetch reviews from MongoDB:", error);
   }
