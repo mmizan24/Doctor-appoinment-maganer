@@ -1,6 +1,3 @@
-const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-const isRelativeApi = configuredApiUrl?.startsWith("/");
-
 const sameOriginApiBaseUrl = () => {
   if (typeof window !== "undefined") {
     return "/api";
@@ -14,8 +11,7 @@ const sameOriginApiBaseUrl = () => {
   return `${(appUrl || "http://localhost:3000").replace(/\/$/, "")}/api`;
 };
 
-export const API_BASE_URL =
-  configuredApiUrl && isRelativeApi ? configuredApiUrl : sameOriginApiBaseUrl();
+export const API_BASE_URL = sameOriginApiBaseUrl();
 
 export const apiUrl = (path) =>
   `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
