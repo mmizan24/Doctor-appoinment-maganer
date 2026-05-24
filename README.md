@@ -4,7 +4,7 @@ NavidMediCare is a doctor appointment manager for browsing doctors, booking visi
 
 ## Live Site
 
-Client-side live URL: https://your-client-live-site-url.com
+Client-side live URL:https://doctor-appointment-manager-sable.vercel.app/
 
 ## Repositories
 
