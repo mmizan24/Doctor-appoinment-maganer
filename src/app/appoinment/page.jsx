@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react"; // Added useEffect
 import {
   FaCalendarCheck,
   FaClock,
@@ -10,10 +10,10 @@ import {
   FaStar,
   FaUserDoctor,
 } from "react-icons/fa6";
-import { doctors } from "@/data/doctors";
 import { authClient } from "@/lib/auth-client";
 
 const getExperienceYears = (exp) => {
+  if (!exp) return 0;
   const matched = exp.match(/\d+/);
   return matched ? parseInt(matched[0], 10) : 0;
 };
@@ -21,60 +21,72 @@ const getExperienceYears = (exp) => {
 const AppointmentPage = () => {
   const router = useRouter();
   const { data: session } = authClient.useSession();
+
+  // 1. Replaced static import with dynamic state
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [searchText, setSearchText] = useState("");
   const [sortBy, setSortBy] = useState("default");
 
+  // 2. Fetch the MongoDB data on client component mount
+  useEffect(() => {
+    const fetchDoctors = async () => {
+      try {
+        const res = await fetch("/api/doctors");
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setDoctors(data);
+        }
+      } catch (error) {
+        console.error("Error fetching doctors from MongoDB:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctors();
+  }, []);
+
   const visibleDoctors = useMemo(() => {
+    // Add optional chaining check safely in case data loading lags
     const filteredDoctors = doctors.filter((doctor) =>
-      doctor.name.toLowerCase().includes(searchText.trim().toLowerCase()),
+      doctor.name?.toLowerCase().includes(searchText.trim().toLowerCase()),
     );
 
     return [...filteredDoctors].sort((firstDoctor, secondDoctor) => {
-      if (sortBy === "rating") {
-        return secondDoctor.rating - firstDoctor.rating;
-      }
-
-      if (sortBy === "fee-low") {
-        return firstDoctor.fee - secondDoctor.fee;
-      }
-
-      if (sortBy === "fee-high") {
-        return secondDoctor.fee - firstDoctor.fee;
-      }
-
-      if (sortBy === "name-asc") {
-        return firstDoctor.name.localeCompare(secondDoctor.name);
-      }
-
-      if (sortBy === "name-desc") {
-        return secondDoctor.name.localeCompare(firstDoctor.name);
-      }
-
-      if (sortBy === "experience-high") {
-        return getExperienceYears(secondDoctor.experience) - getExperienceYears(firstDoctor.experience);
-      }
-
-      if (sortBy === "experience-low") {
-        return getExperienceYears(firstDoctor.experience) - getExperienceYears(secondDoctor.experience);
-      }
-
+      if (sortBy === "rating") return secondDoctor.rating - firstDoctor.rating;
+      if (sortBy === "fee-low") return firstDoctor.fee - secondDoctor.fee;
+      if (sortBy === "fee-high") return secondDoctor.fee - firstDoctor.fee;
+      if (sortBy === "name-asc") return firstDoctor.name.localeCompare(secondDoctor.name);
+      if (sortBy === "name-desc") return secondDoctor.name.localeCompare(firstDoctor.name);
+      if (sortBy === "experience-high") return getExperienceYears(secondDoctor.experience) - getExperienceYears(firstDoctor.experience);
+      if (sortBy === "experience-low") return getExperienceYears(firstDoctor.experience) - getExperienceYears(secondDoctor.experience);
       return 0;
     });
-  }, [searchText, sortBy]);
+  }, [doctors, searchText, sortBy]);
 
   const handleViewDetails = (doctorId) => {
     if (session?.user) {
       router.push(`/doctors/${doctorId}`);
       return;
     }
-
     router.push(`/login?redirect=/doctors/${doctorId}`);
   };
+
+  // 3. Simple Loading state guard
+  if (loading) {
+    return (
+      <div className="flex h-96 items-center justify-center text-slate-500">
+        Loading appointments from database...
+      </div>
+    );
+  }
 
   return (
     <section className="px-4 py-12 sm:px-6 lg:px-8 bg-white dark:bg-slate-950 transition-colors duration-300">
       <div className="mx-auto w-full max-w-7xl">
-        
+
         {/* Top Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
@@ -84,7 +96,7 @@ const AppointmentPage = () => {
             <h1 className="mt-3 text-3xl font-bold text-slate-950 dark:text-slate-100 sm:text-4xl">
               Choose your next doctor visit
             </h1>
-            <p className="mt-4 text-base leading-7 text-white-600 dark:text-slate-100">
+            <p className="mt-4 text-base leading-7 text-slate-600 dark:text-slate-100">
               Browse all available appointments and open a doctor profile before
               confirming your schedule.
             </p>
@@ -107,7 +119,7 @@ const AppointmentPage = () => {
               value={searchText}
               onChange={(event) => setSearchText(event.target.value)}
               placeholder="Search by doctor name"
-              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-black dark:bg-slate-800 text-black-950 dark:text-slate-100 py-3 pl-10 pr-3 text-sm outline-none transition focus:border-blue-600"
+              className="w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-950 dark:text-slate-100 py-3 pl-10 pr-3 text-sm outline-none transition focus:border-blue-600"
             />
           </label>
 
@@ -157,7 +169,7 @@ const AppointmentPage = () => {
                     className="text-blue-600 dark:text-blue-500"
                     aria-hidden="true"
                   />
-                  {doctor.availability[0]}
+                  {doctor.availability?.[0] || "N/A"}
                 </p>
                 <p className="flex items-center gap-2">
                   <FaClock className="text-blue-600 dark:text-blue-500" aria-hidden="true" />
