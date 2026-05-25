@@ -8,22 +8,32 @@ import {
   FaUserDoctor,
 } from "react-icons/fa6";
 import BookAppointmentModal from "@/Components/BookAppointmentModal";
-import { doctors } from "@/data/doctors";
 import { getDb } from "@/lib/mongodb";
 
 export const dynamic = "force-dynamic";
 
 const DoctorDetailsPage = async ({ params }) => {
   const { id } = await params;
-  const doctor = doctors.find((item) => item.id === id);
-
-  if (!doctor) {
-    notFound();
-  }
-
+  let doctor = null;
   let reviews = [];
+
   try {
     const db = await getDb();
+
+    // 1. Fetch the singular doctor from the 'doctors' collection matching your string custom ID
+    const docData = await db.collection("doctors").findOne({ _id: id });
+
+    if (!docData) {
+      notFound();
+    }
+
+    // Map MongoDB's _id back to id for child component compatibility (like BookAppointmentModal)
+    doctor = {
+      ...docData,
+      id: docData._id,
+    };
+
+    // 2. Fetch related reviews
     const reviewDocs = await db
       .collection("reviews")
       .find({ doctorId: id })
@@ -35,22 +45,23 @@ const DoctorDetailsPage = async ({ params }) => {
       _id: review._id.toString(),
       createdAt: review.createdAt
         ? new Date(review.createdAt).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })
         : "Recently",
     }));
   } catch (error) {
-    console.error("Failed to fetch reviews from MongoDB:", error);
+    console.error("Failed to fetch data from MongoDB for Doctor Details:", error);
+    notFound(); // Gracefully redirect to a 404 page if database connection drops
   }
 
-  // 2. Compute dynamic rating averages
+  // 3. Compute dynamic rating averages safely
   const hasReviews = reviews.length > 0;
   const reviewCount = reviews.length;
   const avgRating = hasReviews
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount).toFixed(1)
-    : doctor.rating;
+    : (doctor.rating || 0).toFixed(1);
 
   return (
     <section className="px-4 py-12 sm:px-6 lg:px-8 bg-white dark:bg-slate-950 transition-colors duration-300">
@@ -84,7 +95,7 @@ const DoctorDetailsPage = async ({ params }) => {
               <div className="rounded-md bg-slate-50 dark:bg-slate-800/40 p-4">
                 <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Rating</p>
                 <p className="mt-1 flex items-center gap-1 font-bold text-slate-950 dark:text-slate-100">
-                  <FaStar className="text-amber-500 animate-pulse" aria-hidden="true" />
+                  <FaStar className="text-amber-500" aria-hidden="true" />
                   {avgRating} <span className="text-xs font-normal text-slate-400">({reviewCount})</span>
                 </p>
               </div>
@@ -169,7 +180,7 @@ const DoctorDetailsPage = async ({ params }) => {
                   <div>
                     <p className="text-sm text-slate-500 dark:text-slate-400">Languages</p>
                     <p className="mt-1 font-semibold text-slate-950 dark:text-slate-200">
-                      {doctor.languages.join(", ")}
+                      {Array.isArray(doctor.languages) ? doctor.languages.join(", ") : doctor.languages}
                     </p>
                   </div>
                 </div>
@@ -191,7 +202,7 @@ const DoctorDetailsPage = async ({ params }) => {
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                {doctor.availability.map((slot) => (
+                {doctor.availability && doctor.availability.map((slot) => (
                   <div
                     key={slot}
                     className="flex items-center gap-3 rounded-md border border-blue-100 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-950/20 p-4 text-sm font-semibold text-blue-700 dark:text-blue-300"
@@ -229,12 +240,12 @@ const DoctorDetailsPage = async ({ params }) => {
                             />
                           ) : (
                             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-semibold text-sm">
-                              {review.userName.charAt(0).toUpperCase()}
+                              {review.userName ? review.userName.charAt(0).toUpperCase() : "P"}
                             </span>
                           )}
                           <div>
                             <h3 className="text-sm font-bold text-slate-950 dark:text-slate-200">
-                              {review.userName}
+                              {review.userName || "Anonymous Patient"}
                             </h3>
                             <p className="text-xs text-slate-400 mt-0.5">
                               {review.createdAt}

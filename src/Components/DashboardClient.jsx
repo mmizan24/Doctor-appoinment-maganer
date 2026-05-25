@@ -12,7 +12,6 @@ import {
   FaStar,
   FaRegStar,
 } from "react-icons/fa6";
-import { doctors } from "@/data/doctors";
 import { authClient } from "@/lib/auth-client";
 import { apiUrl } from "@/lib/api";
 
@@ -35,10 +34,11 @@ const DashboardClient = () => {
   const [authChecked, setAuthChecked] = useState(false);
   const [activeTab, setActiveTab] = useState("bookings");
   const [bookings, setBookings] = useState([]);
+  const [dbDoctors, setDbDoctors] = useState([]); // Dynamically store doctors from MongoDB
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [toast, setToast] = useState("");
   const [error, setError] = useState("");
-  
+
   // Sorting state
   const [sortBy, setSortBy] = useState("date-asc");
 
@@ -84,7 +84,7 @@ const DashboardClient = () => {
         return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
       }
       if (sortBy === "doctor-name") {
-        return a.doctorName.localeCompare(b.doctorName);
+        return (a.doctorName || "").localeCompare(b.doctorName || "");
       }
       if (sortBy === "fee-high") {
         return (b.fee || 0) - (a.fee || 0);
@@ -131,24 +131,35 @@ const DashboardClient = () => {
     }
   }, [authChecked, isSessionPending, router, user]);
 
+  // Synchronized parallel database load sequence
   useEffect(() => {
     if (!user?.email) {
       return;
     }
 
-    const loadBookings = async () => {
+    const loadDashboardData = async () => {
       setIsLoadingBookings(true);
       setError("");
 
       try {
-        const response = await fetch(apiUrl("/appointments"));
-        const result = await response.json();
+        // Fetch both appointments and actual doctors from the database parallelly
+        const [appRes, docRes] = await Promise.all([
+          fetch(apiUrl("/appointments")),
+          fetch("/api/doctors")
+        ]);
 
-        if (!response.ok) {
-          throw new Error(result.message || "Failed to load bookings.");
+        const appResult = await appRes.json();
+        let docResult = [];
+        if (docRes.ok) {
+          docResult = await docRes.json();
         }
 
-        setBookings(result.appointments || []);
+        if (!appRes.ok) {
+          throw new Error(appResult.message || "Failed to load bookings.");
+        }
+
+        setBookings(appResult.appointments || []);
+        setDbDoctors(Array.isArray(docResult) ? docResult : []);
       } catch (loadError) {
         setError(loadError.message);
       } finally {
@@ -156,7 +167,7 @@ const DashboardClient = () => {
       }
     };
 
-    loadBookings();
+    loadDashboardData();
   }, [user?.email]);
 
   const stats = useMemo(
@@ -300,12 +311,15 @@ const DashboardClient = () => {
     setIsSavingReview(true);
     setError("");
 
-    const matchedDoctor = doctors.find(
+    // Safe lookup against dynamic database records
+    const matchedDoctor = dbDoctors.find(
       (doctor) =>
-        doctor.name.toLowerCase() ===
+        (doctor.name || "").toLowerCase() ===
         (reviewingBooking.doctorName || "").trim().toLowerCase(),
     );
-    const doctorId = reviewingBooking.doctorId || matchedDoctor?.id || "d1";
+
+    // Fallback safely to booking properties or matched dynamic id
+    const doctorId = reviewingBooking.doctorId || matchedDoctor?.id || matchedDoctor?._id || "d1";
 
     try {
       const response = await fetch(apiUrl("/reviews"), {
@@ -317,6 +331,8 @@ const DashboardClient = () => {
           doctorName: reviewingBooking.doctorName,
           rating: reviewForm.rating,
           comment,
+          userName: user.name || "Anonymous",
+          userPhoto: user.photoURL || "",
         }),
       });
 
@@ -394,22 +410,20 @@ const DashboardClient = () => {
           <button
             type="button"
             onClick={() => setActiveTab("bookings")}
-            className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
-              activeTab === "bookings"
+            className={`rounded-md px-4 py-2 text-sm font-semibold transition ${activeTab === "bookings"
                 ? "bg-blue-600 text-white"
                 : "border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600"
-            }`}
+              }`}
           >
             My Bookings
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("profile")}
-            className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
-              activeTab === "profile"
+            className={`rounded-md px-4 py-2 text-sm font-semibold transition ${activeTab === "profile"
                 ? "bg-blue-600 text-white"
                 : "border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600"
-            }`}
+              }`}
           >
             My Profile
           </button>
@@ -429,7 +443,6 @@ const DashboardClient = () => {
               </div>
             ) : bookings.length ? (
               <div className="space-y-6">
-                {/* Bookings header & Sorting options */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 dark:border-slate-800/80 pb-4">
                   <h2 className="text-xl font-bold text-slate-950 dark:text-slate-100">
                     Your Booked Appointments
@@ -507,7 +520,7 @@ const DashboardClient = () => {
                         <button
                           type="button"
                           onClick={() => openBookingEditor(booking)}
-                          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
                         >
                           <FaPen aria-hidden="true" />
                           Update
@@ -515,7 +528,7 @@ const DashboardClient = () => {
                         <button
                           type="button"
                           onClick={() => openReviewModal(booking)}
-                          className="inline-flex items-center gap-2 rounded-md border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-4 py-2 text-sm font-semibold text-amber-700 dark:text-amber-400 transition hover:bg-amber-100 dark:hover:bg-amber-950/45"
+                          className="inline-flex items-center gap-2 rounded-md border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20 px-4 py-2 text-sm font-semibold text-amber-700 dark:text-amber-400 transition hover:bg-amber-100 dark:hover:bg-amber-950/45 cursor-pointer"
                         >
                           <FaStar aria-hidden="true" className="text-amber-500" />
                           Add Review
@@ -523,7 +536,7 @@ const DashboardClient = () => {
                         <button
                           type="button"
                           onClick={() => handleBookingDelete(booking._id)}
-                          className="inline-flex items-center gap-2 rounded-md border border-red-200 dark:border-red-900/60 px-4 py-2 text-sm font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/10"
+                          className="inline-flex items-center gap-2 rounded-md border border-red-200 dark:border-red-900/60 px-4 py-2 text-sm font-semibold text-red-600 dark:text-red-400 transition hover:bg-red-50 dark:hover:bg-red-950/10 cursor-pointer"
                         >
                           <FaTrash aria-hidden="true" />
                           Delete
@@ -574,7 +587,7 @@ const DashboardClient = () => {
               <button
                 type="button"
                 onClick={() => setIsProfileOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                className="inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 cursor-pointer"
               >
                 <FaPen aria-hidden="true" />
                 Update Profile
@@ -600,7 +613,7 @@ const DashboardClient = () => {
                 type="button"
                 onClick={() => setEditingBooking(null)}
                 aria-label="Close update modal"
-                className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700"
+                className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
               >
                 <FaXmark aria-hidden="true" />
               </button>
@@ -687,7 +700,7 @@ const DashboardClient = () => {
               <button
                 type="submit"
                 disabled={isSavingBooking}
-                className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 cursor-pointer"
               >
                 {isSavingBooking ? "Saving..." : "Save Appointment"}
               </button>
@@ -712,7 +725,7 @@ const DashboardClient = () => {
                 type="button"
                 onClick={() => setIsProfileOpen(false)}
                 aria-label="Close profile modal"
-                className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700"
+                className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
               >
                 <FaXmark aria-hidden="true" />
               </button>
@@ -753,7 +766,7 @@ const DashboardClient = () => {
               <button
                 type="submit"
                 disabled={isSavingProfile}
-                className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 cursor-pointer"
               >
                 {isSavingProfile ? "Saving..." : "Save Profile"}
               </button>
@@ -784,7 +797,7 @@ const DashboardClient = () => {
                   setError("");
                 }}
                 aria-label="Close review modal"
-                className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700"
+                className="flex h-10 w-10 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 transition hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
               >
                 <FaXmark aria-hidden="true" />
               </button>
@@ -798,53 +811,53 @@ const DashboardClient = () => {
                 <div className="mt-3 flex items-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
-                      key={star}
-                      type="button"
-                      onClick={() => setReviewForm((curr) => ({ ...curr, rating: star }))}
-                      className="text-3xl transition duration-150 hover:scale-110 active:scale-95 cursor-pointer"
+                      key = { star }
+                      type = "button"
+                      onClick = {() => setReviewForm((curr) => ({...curr, rating: star }))}
+                  className="text-3xl transition duration-150 hover:scale-110 active:scale-95 cursor-pointer"
                     >
-                      {star <= reviewForm.rating ? (
-                        <FaStar className="text-amber-500" />
-                      ) : (
-                        <FaRegStar className="text-slate-300 dark:text-slate-600" />
-                      )}
-                    </button>
+                  {star <= reviewForm.rating ? (
+                    <FaStar className="text-amber-500" />
+                  ) : (
+                    <FaRegStar className="text-slate-300 dark:text-slate-600" />
+                  )}
+                </button>
                   ))}
-                </div>
               </div>
-
-              <div>
-                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  Your Review
-                  <textarea
-                    value={reviewForm.comment}
-                    onChange={(e) => setReviewForm((curr) => ({ ...curr, comment: e.target.value }))}
-                    required
-                    rows={4}
-                    placeholder="Share your experience with this doctor..."
-                    className="mt-2 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-950 dark:text-slate-100 p-3 text-sm outline-none transition focus:border-blue-600"
-                  />
-                </label>
-              </div>
-
-              {error && (
-                <p className="rounded-md bg-red-50 dark:bg-red-950/20 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400">
-                  {error}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSavingReview}
-                className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-              >
-                {isSavingReview ? "Saving..." : "Submit Review"}
-              </button>
-            </form>
           </div>
-        </div>
+
+          <div>
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              Your Review
+              <textarea
+                value={reviewForm.comment}
+                onChange={(e) => setReviewForm((curr) => ({ ...curr, comment: e.target.value }))}
+                required
+                rows={4}
+                placeholder="Share your experience with this doctor..."
+                className="mt-2 w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-950 dark:text-slate-100 p-3 text-sm outline-none transition focus:border-blue-600"
+              />
+            </label>
+          </div>
+
+          {error && (
+            <p className="rounded-md bg-red-50 dark:bg-red-950/20 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={isSavingReview}
+            className="inline-flex w-full items-center justify-center rounded-md bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 cursor-pointer"
+          >
+            {isSavingReview ? "Saving..." : "Submit Review"}
+          </button>
+        </form>
+          </div>
+        </div >
       )}
-    </section>
+    </section >
   );
 };
 
