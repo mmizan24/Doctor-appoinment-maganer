@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FaLocationDot, FaStar, FaUserDoctor } from "react-icons/fa6";
-import { doctors } from "@/data/doctors";
+import { doctors } from "@/app/doctors";
 import { authClient } from "@/lib/auth-client";
 
 const TopRatedDoctors = () => {
